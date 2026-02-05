@@ -1,38 +1,103 @@
-import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
+import { db } from "./db";
+import { rateLimits, dailyUsage, topicSearches, type InsertTopicSearch } from "@shared/schema";
+import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
-  getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Rate limiting
+  getUserGenerationCount(userHash: string, dateKey: string): Promise<number>;
+  incrementUserGenerationCount(userHash: string, dateKey: string): Promise<void>;
+  getDailyGlobalCount(dateKey: string): Promise<number>;
+  incrementDailyGlobalCount(dateKey: string): Promise<void>;
+  
+  // Topic analytics
+  recordTopicSearch(data: InsertTopicSearch): Promise<void>;
+  getTopTopics(limit?: number): Promise<Array<{ topic: string; count: number }>>;
+  getTotalSearchCount(): Promise<number>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
+export class DatabaseStorage implements IStorage {
+  async getUserGenerationCount(userHash: string, dateKey: string): Promise<number> {
+    const result = await db
+      .select({ generationCount: rateLimits.generationCount })
+      .from(rateLimits)
+      .where(and(eq(rateLimits.userHash, userHash), eq(rateLimits.dateKey, dateKey)));
+    
+    return result[0]?.generationCount ?? 0;
   }
 
-  async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+  async incrementUserGenerationCount(userHash: string, dateKey: string): Promise<void> {
+    const existing = await db
+      .select()
+      .from(rateLimits)
+      .where(and(eq(rateLimits.userHash, userHash), eq(rateLimits.dateKey, dateKey)));
+    
+    if (existing.length > 0) {
+      await db
+        .update(rateLimits)
+        .set({ generationCount: sql`${rateLimits.generationCount} + 1` })
+        .where(and(eq(rateLimits.userHash, userHash), eq(rateLimits.dateKey, dateKey)));
+    } else {
+      await db.insert(rateLimits).values({
+        userHash,
+        dateKey,
+        generationCount: 1,
+      });
+    }
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getDailyGlobalCount(dateKey: string): Promise<number> {
+    const result = await db
+      .select({ totalGenerations: dailyUsage.totalGenerations })
+      .from(dailyUsage)
+      .where(eq(dailyUsage.dateKey, dateKey));
+    
+    return result[0]?.totalGenerations ?? 0;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+  async incrementDailyGlobalCount(dateKey: string): Promise<void> {
+    const existing = await db
+      .select()
+      .from(dailyUsage)
+      .where(eq(dailyUsage.dateKey, dateKey));
+    
+    if (existing.length > 0) {
+      await db
+        .update(dailyUsage)
+        .set({ totalGenerations: sql`${dailyUsage.totalGenerations} + 1` })
+        .where(eq(dailyUsage.dateKey, dateKey));
+    } else {
+      await db.insert(dailyUsage).values({
+        dateKey,
+        totalGenerations: 1,
+      });
+    }
+  }
+
+  async recordTopicSearch(data: InsertTopicSearch): Promise<void> {
+    await db.insert(topicSearches).values(data);
+  }
+
+  async getTopTopics(limit = 20): Promise<Array<{ topic: string; count: number }>> {
+    const result = await db
+      .select({
+        topic: topicSearches.topic,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(topicSearches)
+      .groupBy(topicSearches.topic)
+      .orderBy(desc(sql`count(*)`))
+      .limit(limit);
+    
+    return result;
+  }
+
+  async getTotalSearchCount(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(topicSearches);
+    
+    return result[0]?.count ?? 0;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
