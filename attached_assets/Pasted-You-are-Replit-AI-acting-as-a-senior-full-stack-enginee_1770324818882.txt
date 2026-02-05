@@ -1,0 +1,358 @@
+You are Replit AI acting as a senior full-stack engineer and product designer.
+
+Your task is to build a production-ready MVP web app called:
+
+Skool Launch Plan Creator
+(by Skool Prep)
+
+The app helps anyone turn a topic or skill into a practical launch blueprint for a Skool community or course, then nudges them to start on Skool using my affiliate link.
+
+DO NOT ask me to manually edit code.
+You must implement everything end-to-end: UI, backend, AI integration, rate limiting, email delivery, and basic analytics.
+
+════════════════════════════════
+HIGH-LEVEL GOAL
+════════════════════════════════
+
+The app should:
+1) Ask users what topic/niche they want to build around.
+2) Generate a realistic, Skool-native launch plan that helps them get their first ~20 members.
+3) Decide whether the idea works best as:
+   - a Skool community
+   - a Skool course
+   - or a community + course combo
+4) Provide:
+   - positioning
+   - naming ideas
+   - pricing strategy
+   - a 7-day launch plan
+   - copy people can actually use
+5) Encourage users to start a FREE Skool trial immediately via my affiliate link.
+6) Let users email the plan to themselves.
+7) Subtly link to SkoolPrep.com blog content for further help.
+
+This is NOT a hype tool.
+It is a calm, practical “start here” blueprint generator.
+
+════════════════════════════════
+TARGET USER
+════════════════════════════════
+
+Anyone who wants to build MRR online.
+
+Assume:
+- Everyone has a monetisable skill or interest if framed correctly.
+- Users may be beginners.
+- Encourage action, not judgment.
+- Avoid “strong/weak idea” verdicts.
+
+Position everything as:
+“This is a solid way to get started and find your first 20 members.”
+
+════════════════════════════════
+STACK & SETUP
+════════════════════════════════
+
+- Use a stack that works well on Replit:
+  Prefer Next.js + React + Tailwind if possible.
+- Use server-side API routes for OpenAI + email.
+- No login required.
+- Use SQLite (or Replit-friendly persistence) for:
+  - rate limits
+  - daily global usage
+  - storing searched topics (light analytics only).
+
+════════════════════════════════
+ENVIRONMENT VARIABLES
+════════════════════════════════
+
+Required:
+- OPENAI_API_KEY
+- SKOOL_AFFILIATE_URL
+- HASH_SALT
+- ADMIN_PASSWORD
+
+Optional (for email):
+- RESEND_API_KEY
+- FROM_EMAIL
+
+If any required env var is missing:
+- Show a clear, friendly UI error explaining what’s missing.
+- Do not crash.
+
+════════════════════════════════
+ROUTES / PAGES
+════════════════════════════════
+
+1) /
+Landing + form
+
+2) /plan
+Results page (session-based; no permanent user data storage required)
+
+3) /privacy
+Explain what data is stored (rate limits, topic text, email if used)
+
+4) /terms
+Basic disclaimer + educational notice
+
+5) /admin-lite
+Protected by ADMIN_PASSWORD (query param or header)
+Shows:
+- daily usage count
+- top searched topics (aggregated)
+- no personal data
+
+════════════════════════════════
+FORM INPUTS
+════════════════════════════════
+
+Form fields:
+1) Topic / niche (required)
+   Placeholder example:
+   “Fitness for busy dads”
+   “Learning Python”
+   “Helping people quit vaping”
+
+2) Outcome in 30–90 days (required)
+   Reworded clearly:
+   “What result should members achieve in 30–90 days?”
+   Example:
+   “Lose 10lb”
+   “Ship first freelance project”
+   “Pass job interviews”
+
+3) Who you want to help (optional dropdown)
+   Examples:
+   - Beginners
+   - Intermediate
+   - Professionals
+   - Career switchers
+   - Parents
+   - Students
+
+4) Your background (optional dropdown)
+   - I’ve done this myself
+   - I help others with this
+   - I’m learning and documenting it
+   - I already have an audience
+
+Button:
+“Create my Skool launch plan”
+
+════════════════════════════════
+RATE LIMITING
+════════════════════════════════
+
+- Max 3 generations per user per day
+- Max 100 generations total per day
+
+Implementation:
+- Identify users via hashed IP + user-agent (SHA-256 with HASH_SALT).
+- Store per-day counters.
+- If limit exceeded:
+  - Show polite message
+  - Suggest reading SkoolPrep.com blog
+  - Explain reset time (next day)
+
+════════════════════════════════
+AI GENERATION (CRITICAL)
+════════════════════════════════
+
+Use OpenAI API server-side.
+
+You MUST embed the following AI prompts exactly.
+
+––––––––––––––––––––––––––––––––
+SYSTEM PROMPT
+––––––––––––––––––––––––––––––––
+
+You are an expert Skool community and course strategist.
+
+Your job is to turn a user’s topic into a practical, Skool-native launch blueprint that helps them get their first 20 members.
+
+Hard rules:
+- Output MUST be valid JSON only.
+- No markdown, no commentary, no emojis.
+- Be encouraging but not hypey.
+- No income guarantees.
+- Avoid medical, legal, or financial advice.
+- Do not include URLs.
+- The plan must be actionable for a solo creator starting from zero.
+- Frame everything as a solid starting blueprint, not a verdict.
+
+Return recommended_path as exactly one of:
+"community" | "course" | "community_plus_course"
+
+––––––––––––––––––––––––––––––––
+USER PROMPT TEMPLATE
+––––––––––––––––––––––––––––––––
+
+Create a Skool launch plan using these inputs:
+
+topic: "{{topic}}"
+outcome_30_90: "{{outcome}}"
+audience_level: "{{audience}}"
+background: "{{background}}"
+
+Return STRICT JSON using this schema:
+
+{
+  "meta": {
+    "topic": "...",
+    "outcome_30_90": "...",
+    "audience_level": "...",
+    "background": "...",
+    "recommended_path": "community|course|community_plus_course"
+  },
+  "positioning": {
+    "community_name_options": ["...", "...", "...", "...", "...", "...", "...", "..."],
+    "one_liner": "...",
+    "who_its_for": ["...", "...", "..."],
+    "who_its_not_for": ["...", "...", "..."],
+    "transformation_promise": "..."
+  },
+  "offer": {
+    "format_explainer": "...",
+    "weekly_structure": {
+      "cadence": "...",
+      "weekly_events": ["...", "..."],
+      "weekly_posts": ["...", "...", "..."],
+      "accountability_loop": "..."
+    },
+    "example_modules_or_themes": ["...", "...", "...", "...", "...", "..."],
+    "content_types": ["...", "...", "...", "..."],
+    "engagement_loops": ["...", "...", "...", "..."]
+  },
+  "first_20_members": {
+    "where_to_find_them": ["...", "...", "...", "...", "...", "..."],
+    "outreach_script_variants": [
+      { "channel": "DM|email|comment|in-person", "script": "..." },
+      { "channel": "DM|email|comment|in-person", "script": "..." },
+      { "channel": "DM|email|comment|in-person", "script": "..." }
+    ],
+    "intro_post_template": {
+      "headline": "...",
+      "body": "...",
+      "call_to_action": "..."
+    },
+    "daily_actions_7_days": [
+      {"day":1,"actions":["...","...","..."]},
+      {"day":2,"actions":["...","...","..."]},
+      {"day":3,"actions":["...","...","..."]},
+      {"day":4,"actions":["...","...","..."]},
+      {"day":5,"actions":["...","...","..."]},
+      {"day":6,"actions":["...","...","..."]},
+      {"day":7,"actions":["...","...","..."]}
+    ]
+  },
+  "pricing": {
+    "suggested_price_range": "...",
+    "free_vs_paid_strategy": "...",
+    "when_to_add_course": "...",
+    "simple_value_math": "..."
+  },
+  "copy_bank": {
+    "hook_lines": ["...","...","...","...","...","...","...","...","...","...","...","..."],
+    "pain_point_phrases": ["...","...","...","...","...","...","...","...","...","...","...","..."],
+    "objection_handlers": ["...","...","...","...","...","...","...","..."],
+    "about_page_template": {
+      "headline": "...",
+      "subheadline": "...",
+      "bullets": ["...","...","...","...","..."],
+      "how_it_works": ["...","...","..."],
+      "who_this_is_for": ["...","...","..."],
+      "call_to_action": "..."
+    }
+  },
+  "launch_plan_7_days": [
+    {"day":1,"goal":"...","tasks":["...","...","..."]},
+    {"day":2,"goal":"...","tasks":["...","...","..."]},
+    {"day":3,"goal":"...","tasks":["...","...","..."]},
+    {"day":4,"goal":"...","tasks":["...","...","..."]},
+    {"day":5,"goal":"...","tasks":["...","...","..."]},
+    {"day":6,"goal":"...","tasks":["...","...","..."]},
+    {"day":7,"goal":"...","tasks":["...","...","..."]}
+  ],
+  "onboarding": {
+    "welcome_post": {
+      "headline": "...",
+      "body": "...",
+      "first_action": "..."
+    },
+    "rules": ["...","...","...","...","..."],
+    "weekly_schedule_post": {
+      "headline": "...",
+      "schedule": ["...","...","...","..."]
+    },
+    "first_challenge_post": {
+      "headline": "...",
+      "challenge": "...",
+      "how_to_participate": ["...","...","..."]
+    },
+    "checklist": ["...","...","...","...","...","...","...","..."]
+  },
+  "disclaimers": {
+    "educational_notice": "..."
+  }
+}
+
+Decision logic:
+- If ongoing accountability and wins matter → community
+- If step-by-step transformation → course
+- If both → community_plus_course
+
+Return JSON only.
+
+════════════════════════════════
+EMAIL DELIVERY
+════════════════════════════════
+
+If RESEND_API_KEY is present:
+- Allow user to email the plan to themselves.
+- Subject: “Your Skool Launch Plan: {{topic}}”
+- Clean HTML + text fallback.
+- Include affiliate CTA button.
+
+If missing:
+- Disable email gracefully and explain why.
+
+════════════════════════════════
+CTA & AFFILIATE INTEGRATION
+════════════════════════════════
+
+After results, show a highlighted CTA card:
+
+“Start your Skool community while this is fresh.
+Skool lets you start for free.”
+
+Button:
+→ Link to SKOOL_AFFILIATE_URL
+(Open in new tab)
+
+No UTMs.
+
+════════════════════════════════
+DESIGN
+════════════════════════════════
+
+- Skool-inspired but not a clone:
+  - White background
+  - Soft blue accents
+  - Rounded cards
+  - Friendly, modern typography
+- Mobile responsive.
+- Fast load.
+- Clear copy buttons per section.
+
+════════════════════════════════
+FINAL REQUIREMENTS
+════════════════════════════════
+
+- App must run end-to-end.
+- No manual edits required.
+- Errors must be friendly.
+- JSON must parse cleanly.
+- This tool should feel like a genuinely useful Skool Prep product, not a toy.
+
+Build it now.
