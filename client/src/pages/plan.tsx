@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { type GeneratedPlan } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 
 interface AppConfig {
   affiliateUrl: string;
@@ -180,9 +181,7 @@ export default function Plan() {
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src={logoImg} alt="Skool Prep" className="w-10 h-10 rounded-md" />
             <div>
               <h1 className="text-2xl font-bold" data-testid="text-plan-title">Your Skool Launch Plan</h1>
               <p className="text-muted-foreground">{plan.meta.topic}</p>

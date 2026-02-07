@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, Sparkles, Target, Users, Lightbulb } from "lucide-react";
+import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 import { planFormSchema, type PlanFormInput } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -51,9 +52,7 @@ export default function Home() {
       <header className="border-b border-border bg-card/50">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src={logoImg} alt="Skool Prep" className="w-8 h-8 rounded-md" />
             <span className="font-semibold text-lg">Skool Launch Plan Creator</span>
           </div>
           <span className="text-sm text-muted-foreground">by Skool Prep</span>
