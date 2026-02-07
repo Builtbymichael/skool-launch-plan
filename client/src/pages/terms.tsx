@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
+import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 
 export default function Terms() {
   const [, navigate] = useLocation();
@@ -10,16 +11,24 @@ export default function Terms() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/50">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-lg">Skool Launch Plan Creator</span>
+          <a href="/" className="flex items-center gap-2" data-testid="link-home-logo">
+            <img src={logoImg} alt="Skool Prep" className="w-8 h-8 rounded-md" />
+          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href="https://skoolprep.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-foreground"
+              data-testid="link-skoolprep"
+            >
+              by skoolprep.com
+            </a>
+            <Button variant="ghost" onClick={() => navigate("/")} data-testid="button-back-home">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
           </div>
-          <Button variant="ghost" onClick={() => navigate("/")} data-testid="button-back-home">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Home
-          </Button>
         </div>
       </header>
 
@@ -132,7 +141,7 @@ export default function Terms() {
             <p>
               For questions about these terms, please visit{" "}
               <a href="https://skoolprep.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">
-                SkoolPrep.com
+                skoolprep.com
               </a>.
             </p>
           </CardContent>
@@ -141,14 +150,14 @@ export default function Terms() {
 
       <footer className="border-t border-border mt-16 py-8 text-center text-sm text-muted-foreground">
         <p>
-          Made with care by{" "}
+          Made with care by Michael at{" "}
           <a 
             href="https://skoolprep.com" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="underline hover:text-foreground"
           >
-            Skool Prep
+            skoolprep.com
           </a>
         </p>
       </footer>

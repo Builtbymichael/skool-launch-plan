@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,9 +14,29 @@ import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 import { planFormSchema, type PlanFormInput } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
+const LOADING_MESSAGES = [
+  "Analysing your topic and niche...",
+  "Checking current Skool communities...",
+  "Deciding on potential names...",
+  "Crafting your positioning statement...",
+  "Identifying your ideal audience...",
+  "Working out best pricing strategies...",
+  "Building your 7-day launch plan...",
+  "Finding where your first members hang out...",
+  "Writing outreach scripts for you...",
+  "Creating your copy bank...",
+  "Designing your onboarding flow...",
+  "Setting up your weekly structure...",
+  "Preparing engagement loops...",
+  "Polishing your launch blueprint...",
+  "Almost there, putting it all together...",
+];
+
 export default function Home() {
   const [, navigate] = useLocation();
   const [error, setError] = useState<string | null>(null);
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const loadingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const form = useForm<PlanFormInput>({
     resolver: zodResolver(planFormSchema),
@@ -34,16 +54,39 @@ export default function Home() {
       return response.json();
     },
     onSuccess: (data) => {
+      stopLoadingMessages();
       sessionStorage.setItem("generatedPlan", JSON.stringify(data));
       navigate("/plan");
     },
     onError: (err: Error) => {
+      stopLoadingMessages();
       setError(err.message || "Something went wrong. Please try again.");
     },
   });
 
+  const stopLoadingMessages = () => {
+    if (loadingIntervalRef.current) {
+      clearInterval(loadingIntervalRef.current);
+      loadingIntervalRef.current = null;
+    }
+  };
+
+  const startLoadingMessages = () => {
+    setLoadingMessageIndex(0);
+    loadingIntervalRef.current = setInterval(() => {
+      setLoadingMessageIndex((prev) => 
+        prev < LOADING_MESSAGES.length - 1 ? prev + 1 : prev
+      );
+    }, 3000);
+  };
+
+  useEffect(() => {
+    return () => stopLoadingMessages();
+  }, []);
+
   const onSubmit = (data: PlanFormInput) => {
     setError(null);
+    startLoadingMessages();
     generatePlan.mutate(data);
   };
 
@@ -51,11 +94,18 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/50">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <a href="/" className="flex items-center gap-2" data-testid="link-home-logo">
             <img src={logoImg} alt="Skool Prep" className="w-8 h-8 rounded-md" />
-            <span className="font-semibold text-lg">Skool Launch Plan Creator</span>
-          </div>
-          <span className="text-sm text-muted-foreground">by Skool Prep</span>
+          </a>
+          <a
+            href="https://skoolprep.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-muted-foreground hover:text-foreground"
+            data-testid="link-skoolprep"
+          >
+            by skoolprep.com
+          </a>
         </div>
       </header>
 
@@ -218,7 +268,7 @@ export default function Home() {
                   {generatePlan.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Creating your launch plan...
+                      {LOADING_MESSAGES[loadingMessageIndex]}
                     </>
                   ) : (
                     <>
@@ -244,14 +294,14 @@ export default function Home() {
 
       <footer className="border-t border-border mt-16 py-8 text-center text-sm text-muted-foreground">
         <p>
-          Made with care by{" "}
+          Made with care by Michael at{" "}
           <a 
             href="https://skoolprep.com" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="underline hover:text-foreground"
           >
-            Skool Prep
+            skoolprep.com
           </a>
         </p>
       </footer>

@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Sparkles, BarChart3, TrendingUp, Lock, Loader2 } from "lucide-react";
+import { ArrowLeft, BarChart3, TrendingUp, Lock, Loader2 } from "lucide-react";
+import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 
 interface AdminStats {
   todayGenerations: number;
@@ -66,10 +67,10 @@ export default function Admin() {
       <div className="min-h-screen bg-background">
         <header className="border-b border-border bg-card/50">
           <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
-              </div>
+            <div className="flex items-center gap-3">
+              <a href="/" className="flex items-center" data-testid="link-home-logo">
+                <img src={logoImg} alt="Skool Prep" className="w-8 h-8 rounded-md" />
+              </a>
               <span className="font-semibold text-lg">Admin Dashboard</span>
             </div>
             <Button variant="ghost" onClick={() => navigate("/")} data-testid="button-back-home">
@@ -114,10 +115,10 @@ export default function Admin() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/50">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex items-center" data-testid="link-home-logo">
+              <img src={logoImg} alt="Skool Prep" className="w-8 h-8 rounded-md" />
+            </a>
             <span className="font-semibold text-lg">Admin Dashboard</span>
           </div>
           <Button variant="ghost" onClick={() => navigate("/")} data-testid="button-back-home">
@@ -205,7 +206,17 @@ export default function Admin() {
       </main>
 
       <footer className="border-t border-border mt-16 py-8 text-center text-sm text-muted-foreground">
-        <p>Admin dashboard - data refreshes every 30 seconds</p>
+        <p>
+          Made with care by Michael at{" "}
+          <a 
+            href="https://skoolprep.com" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="underline hover:text-foreground"
+          >
+            skoolprep.com
+          </a>
+        </p>
       </footer>
     </div>
   );

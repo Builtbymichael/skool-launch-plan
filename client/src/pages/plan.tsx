@@ -127,11 +127,16 @@ export default function Plan() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card/50 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between gap-4 flex-wrap">
-          <Button variant="ghost" onClick={() => navigate("/")} data-testid="button-back">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Create another plan
-          </Button>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex items-center" data-testid="link-home-logo">
+              <img src={logoImg} alt="Skool Prep" className="w-8 h-8 rounded-md" />
+            </a>
+            <Button variant="ghost" onClick={() => navigate("/")} data-testid="button-back">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Create another plan
+            </Button>
+          </div>
+          <div className="flex items-center gap-3">
             {emailEnabled && (
               <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
                 <DialogTrigger asChild>
@@ -174,6 +179,15 @@ export default function Plan() {
                 </DialogContent>
               </Dialog>
             )}
+            <a
+              href="https://skoolprep.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-muted-foreground hover:text-foreground hidden sm:inline"
+              data-testid="link-skoolprep"
+            >
+              by skoolprep.com
+            </a>
           </div>
         </div>
       </header>
@@ -203,7 +217,7 @@ export default function Plan() {
               </div>
               <Button size="lg" asChild data-testid="button-start-skool">
                 <a href={affiliateUrl} target="_blank" rel="noopener noreferrer">
-                  Start free on Skool
+                  Launch This on Skool — Free Trial
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </a>
               </Button>
@@ -664,7 +678,7 @@ export default function Plan() {
               </div>
               <Button size="lg" asChild data-testid="button-start-skool-bottom">
                 <a href={affiliateUrl} target="_blank" rel="noopener noreferrer">
-                  Start free on Skool
+                  Launch This on Skool — Free Trial
                   <ExternalLink className="ml-2 h-4 w-4" />
                 </a>
               </Button>
@@ -690,14 +704,14 @@ export default function Plan() {
 
       <footer className="border-t border-border mt-16 py-8 text-center text-sm text-muted-foreground">
         <p>
-          Made with care by{" "}
+          Made with care by Michael at{" "}
           <a 
             href="https://skoolprep.com" 
             target="_blank" 
             rel="noopener noreferrer" 
             className="underline hover:text-foreground"
           >
-            Skool Prep
+            skoolprep.com
           </a>
         </p>
       </footer>
