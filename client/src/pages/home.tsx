@@ -9,10 +9,30 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Sparkles, Target, Users, Lightbulb } from "lucide-react";
+import { Loader2, Sparkles, Target, Users, Lightbulb, ChevronLeft, ChevronRight } from "lucide-react";
 import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 import { planFormSchema, type PlanFormInput } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+
+import screenshot1 from "@assets/Screenshot_2026-02-07_at_20.12.44_1770495649339.png";
+import screenshot2 from "@assets/Screenshot_2026-02-07_at_20.12.49_1770495649341.png";
+import screenshot3 from "@assets/Screenshot_2026-02-07_at_20.12.53_1770495649341.png";
+import screenshot4 from "@assets/Screenshot_2026-02-07_at_20.12.57_1770495649342.png";
+import screenshot5 from "@assets/Screenshot_2026-02-07_at_20.13.05_1770495649343.png";
+import screenshot6 from "@assets/Screenshot_2026-02-07_at_20.13.08_1770495649344.png";
+import screenshot7 from "@assets/Screenshot_2026-02-07_at_20.13.13_1770495649345.png";
+import screenshot8 from "@assets/Screenshot_2026-02-07_at_20.13.17_1770495649346.png";
+
+const EXAMPLE_SLIDES = [
+  { src: screenshot1, label: "Positioning", description: "Community names, one-liner, and target audience" },
+  { src: screenshot2, label: "Offer Structure", description: "Weekly structure, modules, and engagement loops" },
+  { src: screenshot3, label: "First 20 Members", description: "Where to find them and outreach scripts" },
+  { src: screenshot4, label: "Pricing Strategy", description: "Price range, free vs paid, and value math" },
+  { src: screenshot5, label: "Copy Bank", description: "Hook lines, pain points, and objection handlers" },
+  { src: screenshot6, label: "7-Day Launch", description: "Day-by-day roadmap with specific tasks" },
+  { src: screenshot7, label: "Onboarding", description: "Welcome post, rules, and member checklist" },
+  { src: screenshot8, label: "Daily Actions", description: "Your member acquisition action plan" },
+];
 
 const LOADING_MESSAGES = [
   "Analysing your topic and niche...",
@@ -31,6 +51,89 @@ const LOADING_MESSAGES = [
   "Polishing your launch blueprint...",
   "Almost there, putting it all together...",
 ];
+
+function ExampleCarousel() {
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev === 0 ? EXAMPLE_SLIDES.length - 1 : prev - 1));
+  };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev === EXAMPLE_SLIDES.length - 1 ? 0 : prev + 1));
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      <div className="flex flex-wrap justify-center gap-2 mb-6">
+        {EXAMPLE_SLIDES.map((slide, index) => (
+          <button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+              currentSlide === index
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover-elevate"
+            }`}
+            data-testid={`button-carousel-tab-${index}`}
+          >
+            {slide.label}
+          </button>
+        ))}
+      </div>
+
+      <Card>
+        <CardContent className="p-0 relative">
+          <div className="relative overflow-hidden rounded-md">
+            <img
+              src={EXAMPLE_SLIDES[currentSlide].src}
+              alt={`Example: ${EXAMPLE_SLIDES[currentSlide].label}`}
+              className="w-full h-auto"
+              data-testid="img-carousel-screenshot"
+            />
+
+            <button
+              onClick={prevSlide}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-md hover-elevate"
+              data-testid="button-carousel-prev"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={nextSlide}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm rounded-full p-2 shadow-md hover-elevate"
+              data-testid="button-carousel-next"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="p-4 text-center">
+            <p className="font-medium">{EXAMPLE_SLIDES[currentSlide].label}</p>
+            <p className="text-sm text-muted-foreground">{EXAMPLE_SLIDES[currentSlide].description}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-center gap-1.5 mt-4">
+        {EXAMPLE_SLIDES.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={`w-2 h-2 rounded-full transition-colors ${
+              currentSlide === index ? "bg-primary" : "bg-muted-foreground/30"
+            }`}
+            data-testid={`button-carousel-dot-${index}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const [, navigate] = useLocation();
@@ -289,6 +392,17 @@ export default function Home() {
             {" "}and{" "}
             <a href="/privacy" className="underline hover:text-foreground">Privacy Policy</a>
           </p>
+        </div>
+
+        <div className="mt-20 mb-8">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold mb-2">See what you'll get</h2>
+            <p className="text-muted-foreground">
+              Here's a real example plan we generated for a home carpentry niche
+            </p>
+          </div>
+
+          <ExampleCarousel />
         </div>
       </main>
 

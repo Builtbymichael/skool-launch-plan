@@ -26,6 +26,14 @@ export const topicSearches = pgTable("topic_searches", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
+// Email subscribers - stores emails for future marketing
+export const emailSubscribers = pgTable("email_subscribers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull(),
+  topic: text("topic"),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
 // Insert schemas
 export const insertRateLimitSchema = createInsertSchema(rateLimits).omit({
   id: true,
@@ -38,6 +46,11 @@ export const insertTopicSearchSchema = createInsertSchema(topicSearches).omit({
   createdAt: true,
 });
 
+export const insertEmailSubscriberSchema = createInsertSchema(emailSubscribers).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type RateLimit = typeof rateLimits.$inferSelect;
 export type InsertRateLimit = z.infer<typeof insertRateLimitSchema>;
@@ -45,6 +58,8 @@ export type DailyUsage = typeof dailyUsage.$inferSelect;
 export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
 export type TopicSearch = typeof topicSearches.$inferSelect;
 export type InsertTopicSearch = z.infer<typeof insertTopicSearchSchema>;
+export type EmailSubscriber = typeof emailSubscribers.$inferSelect;
+export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
 
 // Form input schema for validation
 export const planFormSchema = z.object({

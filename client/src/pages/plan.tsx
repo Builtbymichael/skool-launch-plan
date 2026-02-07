@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Sparkles, Copy, Check, ArrowLeft, Mail, ExternalLink, 
   Users, Target, DollarSign, Calendar, MessageSquare, 
-  Rocket, BookOpen, CheckCircle2, Loader2 
+  Rocket, BookOpen, CheckCircle2, Loader2, Download 
 } from "lucide-react";
 import { type GeneratedPlan } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -59,6 +59,149 @@ function CopyableSection({ title, content, multiline = false }: { title: string;
       </div>
     </div>
   );
+}
+
+function generatePlanHtml(plan: GeneratedPlan): string {
+  const pathLabel = plan.meta.recommended_path === "community_plus_course" 
+    ? "Community + Course Combo" 
+    : plan.meta.recommended_path === "course" 
+    ? "Course" 
+    : "Community";
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Your Skool Launch Plan - ${plan.meta.topic}</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 800px; margin: 0 auto; padding: 20px; }
+  h1 { color: #0B3D91; margin-bottom: 4px; }
+  h2 { color: #0B3D91; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-top: 32px; }
+  h3 { color: #374151; margin-top: 20px; }
+  .subtitle { color: #6b7280; margin-top: 0; }
+  .badge { display: inline-block; background: #0B3D91; color: white; padding: 4px 12px; border-radius: 12px; font-size: 13px; margin-bottom: 16px; }
+  .card { background: #f9fafb; border-radius: 8px; padding: 16px; margin: 12px 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid-item { background: #f3f4f6; border-radius: 6px; padding: 10px 14px; font-size: 14px; }
+  ul { padding-left: 20px; }
+  li { margin: 6px 0; }
+  .day-card { background: #f3f4f6; border-left: 4px solid #0B3D91; padding: 12px 16px; margin: 12px 0; border-radius: 0 8px 8px 0; }
+  .day-num { display: inline-block; background: #0B3D91; color: white; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: bold; font-size: 14px; margin-right: 8px; }
+  .section-label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 13px; text-align: center; }
+  @media print { body { padding: 0; } .no-print { display: none; } }
+</style></head><body>
+<h1>Your Skool Launch Plan</h1>
+<p class="subtitle">${plan.meta.topic}</p>
+<span class="badge">Recommended: ${pathLabel}</span>
+
+<h2>Positioning</h2>
+<h3>Community Name Ideas</h3>
+<div class="grid">${plan.positioning.community_name_options.map(n => `<div class="grid-item">${n}</div>`).join('')}</div>
+<div class="card"><p class="section-label">One-liner</p><p><strong>${plan.positioning.one_liner}</strong></p></div>
+<div class="card"><p class="section-label">Transformation Promise</p><p>${plan.positioning.transformation_promise}</p></div>
+<div class="grid" style="margin-top:12px">
+<div><h3>Who it's for</h3><ul>${plan.positioning.who_its_for.map(w => `<li>${w}</li>`).join('')}</ul></div>
+<div><h3>Who it's not for</h3><ul>${plan.positioning.who_its_not_for.map(w => `<li>${w}</li>`).join('')}</ul></div>
+</div>
+
+<h2>Your Offer Structure</h2>
+<div class="card"><p class="section-label">Format Explainer</p><p>${plan.offer.format_explainer}</p></div>
+<h3>Weekly Structure</h3>
+<div class="card"><p class="section-label">Cadence</p><p>${plan.offer.weekly_structure.cadence}</p></div>
+<div class="grid">
+<div><h3>Weekly Events</h3><ul>${plan.offer.weekly_structure.weekly_events.map(e => `<li>${e}</li>`).join('')}</ul></div>
+<div><h3>Weekly Posts</h3><ul>${plan.offer.weekly_structure.weekly_posts.map(p => `<li>${p}</li>`).join('')}</ul></div>
+</div>
+<div class="card"><p class="section-label">Accountability Loop</p><p>${plan.offer.weekly_structure.accountability_loop}</p></div>
+<h3>Example Modules or Themes</h3>
+<div class="grid">${plan.offer.example_modules_or_themes.map(m => `<div class="grid-item">${m}</div>`).join('')}</div>
+<h3>Content Types</h3>
+<ul>${plan.offer.content_types.map(c => `<li>${c}</li>`).join('')}</ul>
+<h3>Engagement Loops</h3>
+<ul>${plan.offer.engagement_loops.map(e => `<li>${e}</li>`).join('')}</ul>
+
+<h2>Finding Your First 20 Members</h2>
+<h3>Where to Find Them</h3>
+<div class="grid">${plan.first_20_members.where_to_find_them.map(p => `<div class="grid-item">${p}</div>`).join('')}</div>
+<h3>Outreach Scripts</h3>
+${plan.first_20_members.outreach_script_variants.map(s => `<div class="card"><p class="section-label">${s.channel}</p><p>${s.script}</p></div>`).join('')}
+<h3>Intro Post Template</h3>
+<div class="card">
+<p class="section-label">Headline</p><p><strong>${plan.first_20_members.intro_post_template.headline}</strong></p>
+<p class="section-label">Body</p><p>${plan.first_20_members.intro_post_template.body}</p>
+<p class="section-label">Call to Action</p><p>${plan.first_20_members.intro_post_template.call_to_action}</p>
+</div>
+
+<h2>Pricing Strategy</h2>
+<div class="card"><p class="section-label">Suggested Price Range</p><p><strong>${plan.pricing.suggested_price_range}</strong></p></div>
+<div class="card"><p class="section-label">Free vs Paid Strategy</p><p>${plan.pricing.free_vs_paid_strategy}</p></div>
+<div class="card"><p class="section-label">When to Add a Course</p><p>${plan.pricing.when_to_add_course}</p></div>
+<div class="card"><p class="section-label">Simple Value Math</p><p>${plan.pricing.simple_value_math}</p></div>
+
+<h2>Copy Bank</h2>
+<h3>Hook Lines</h3>
+<div class="grid">${plan.copy_bank.hook_lines.map(h => `<div class="grid-item">${h}</div>`).join('')}</div>
+<h3>Pain Point Phrases</h3>
+<div class="grid">${plan.copy_bank.pain_point_phrases.map(p => `<div class="grid-item">${p}</div>`).join('')}</div>
+<h3>Objection Handlers</h3>
+${plan.copy_bank.objection_handlers.map((o, i) => `<div class="card"><p class="section-label">Objection ${i+1}</p><p>${o}</p></div>`).join('')}
+<h3>About Page Template</h3>
+<div class="card">
+<p><strong>${plan.copy_bank.about_page_template.headline}</strong></p>
+<p>${plan.copy_bank.about_page_template.subheadline}</p>
+<ul>${plan.copy_bank.about_page_template.bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+<p class="section-label">How It Works</p>
+<ul>${plan.copy_bank.about_page_template.how_it_works.map(h => `<li>${h}</li>`).join('')}</ul>
+<p class="section-label">Call to Action</p>
+<p><strong>${plan.copy_bank.about_page_template.call_to_action}</strong></p>
+</div>
+
+<h2>7-Day Launch Plan</h2>
+${plan.launch_plan_7_days.map(d => `<div class="day-card"><p><span class="day-num">${d.day}</span><strong>${d.goal}</strong></p><ul>${d.tasks.map(t => `<li>${t}</li>`).join('')}</ul></div>`).join('')}
+
+<h2>Member Onboarding</h2>
+<h3>Welcome Post</h3>
+<div class="card">
+<p class="section-label">Headline</p><p><strong>${plan.onboarding.welcome_post.headline}</strong></p>
+<p class="section-label">Body</p><p>${plan.onboarding.welcome_post.body}</p>
+<p class="section-label">First Action</p><p>${plan.onboarding.welcome_post.first_action}</p>
+</div>
+<h3>Community Rules</h3>
+<ol>${plan.onboarding.rules.map(r => `<li>${r}</li>`).join('')}</ol>
+<h3>Weekly Schedule Post</h3>
+<div class="card">
+<p><strong>${plan.onboarding.weekly_schedule_post.headline}</strong></p>
+<ul>${plan.onboarding.weekly_schedule_post.schedule.map(s => `<li>${s}</li>`).join('')}</ul>
+</div>
+<h3>First Challenge Post</h3>
+<div class="card">
+<p><strong>${plan.onboarding.first_challenge_post.headline}</strong></p>
+<p>${plan.onboarding.first_challenge_post.challenge}</p>
+<p class="section-label">How to Participate</p>
+<ol>${plan.onboarding.first_challenge_post.how_to_participate.map(h => `<li>${h}</li>`).join('')}</ol>
+</div>
+<h3>Onboarding Checklist</h3>
+<ul>${plan.onboarding.checklist.map(c => `<li>${c}</li>`).join('')}</ul>
+
+<h2>Daily Actions (First 7 Days)</h2>
+${plan.first_20_members.daily_actions_7_days.map(d => `<div class="day-card"><p><span class="day-num">${d.day}</span><strong>Day ${d.day}</strong></p><ul>${d.actions.map(a => `<li>${a}</li>`).join('')}</ul></div>`).join('')}
+
+<div class="footer">
+<p>${plan.disclaimers.educational_notice}</p>
+<p>Created with <a href="https://skoolprep.com">Skool Prep</a></p>
+</div>
+</body></html>`;
+}
+
+function downloadPlanAsHtml(plan: GeneratedPlan) {
+  const html = generatePlanHtml(plan);
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `skool-launch-plan-${plan.meta.topic.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export default function Plan() {
@@ -179,6 +322,17 @@ export default function Plan() {
                 </DialogContent>
               </Dialog>
             )}
+            <Button
+              variant="outline"
+              onClick={() => {
+                downloadPlanAsHtml(plan);
+                toast({ description: "Plan downloaded! Open the file in your browser and print to save as PDF." });
+              }}
+              data-testid="button-download-plan"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download
+            </Button>
             <a
               href="https://skoolprep.com"
               target="_blank"

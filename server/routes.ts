@@ -300,6 +300,16 @@ export async function registerRoutes(
         throw new Error(errorData.message || "Failed to send email");
       }
 
+      // Store email for future marketing
+      try {
+        await storage.addEmailSubscriber({
+          email,
+          topic: plan.meta?.topic || null,
+        });
+      } catch (subErr) {
+        console.error("Failed to store email subscriber:", subErr);
+      }
+
       res.json({ success: true });
     } catch (error: any) {
       console.error("Error sending email:", error);
@@ -328,16 +338,18 @@ export async function registerRoutes(
 
     try {
       const dateKey = getDateKey();
-      const [todayGenerations, totalSearches, topTopics] = await Promise.all([
+      const [todayGenerations, totalSearches, topTopics, emailSubscribers] = await Promise.all([
         storage.getDailyGlobalCount(dateKey),
         storage.getTotalSearchCount(),
         storage.getTopTopics(20),
+        storage.getEmailSubscriberCount(),
       ]);
 
       res.json({
         todayGenerations,
         totalSearches,
         topTopics,
+        emailSubscribers,
       });
     } catch (error) {
       console.error("Error fetching admin stats:", error);
@@ -358,14 +370,14 @@ function generatePlanEmailHtml(plan: any, affiliateUrl: string): string {
   <title>Your Skool Launch Plan</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 20px; }
-    h1 { color: #2563eb; }
+    h1 { color: #0B3D91; }
     h2 { color: #374151; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; margin-top: 32px; }
     h3 { color: #4b5563; }
     .card { background: #f9fafb; border-radius: 8px; padding: 16px; margin: 16px 0; }
-    .cta { background: #2563eb; color: white; padding: 16px 24px; border-radius: 8px; text-decoration: none; display: inline-block; margin: 24px 0; }
+    .cta { background: #0B3D91; color: white; padding: 16px 24px; border-radius: 8px; text-decoration: none; display: inline-block; margin: 24px 0; }
     ul { padding-left: 20px; }
     li { margin: 8px 0; }
-    .day-card { background: #f3f4f6; border-left: 4px solid #2563eb; padding: 12px; margin: 12px 0; }
+    .day-card { background: #f3f4f6; border-left: 4px solid #0B3D91; padding: 12px; margin: 12px 0; }
     .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 14px; }
   </style>
 </head>
