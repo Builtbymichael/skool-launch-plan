@@ -1,26 +1,22 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { 
-  Sparkles, Copy, Check, ArrowLeft, Mail, ExternalLink, 
+  Sparkles, Copy, Check, ArrowLeft, ExternalLink, 
   Users, Target, DollarSign, Calendar, MessageSquare, 
   Rocket, BookOpen, CheckCircle2, Loader2, Download 
 } from "lucide-react";
 import { type GeneratedPlan } from "@shared/schema";
-import { apiRequest } from "@/lib/queryClient";
 import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 
 interface AppConfig {
   affiliateUrl: string;
-  emailEnabled: boolean;
 }
 
 function CopyButton({ text, label }: { text: string; label?: string }) {
@@ -61,7 +57,7 @@ function CopyableSection({ title, content, multiline = false }: { title: string;
   );
 }
 
-function generatePlanHtml(plan: GeneratedPlan): string {
+function generatePlanHtml(plan: GeneratedPlan, affiliateUrl: string): string {
   const pathLabel = plan.meta.recommended_path === "community_plus_course" 
     ? "Community + Course Combo" 
     : plan.meta.recommended_path === "course" 
@@ -85,6 +81,10 @@ function generatePlanHtml(plan: GeneratedPlan): string {
   .day-card { background: #f3f4f6; border-left: 4px solid #0B3D91; padding: 12px 16px; margin: 12px 0; border-radius: 0 8px 8px 0; }
   .day-num { display: inline-block; background: #0B3D91; color: white; width: 28px; height: 28px; border-radius: 50%; text-align: center; line-height: 28px; font-weight: bold; font-size: 14px; margin-right: 8px; }
   .section-label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .cta-box { background: #0B3D91; border-radius: 10px; padding: 28px 24px; text-align: center; margin: 36px 0; }
+  .cta-box h3 { color: white; margin: 0 0 8px 0; font-size: 20px; }
+  .cta-box p { color: #c5d4eb; margin: 0 0 16px 0; font-size: 15px; }
+  .cta-btn { display: inline-block; background: #EF3E36; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 16px; }
   .footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid #e5e7eb; color: #6b7280; font-size: 13px; text-align: center; }
   @media print { body { padding: 0; } .no-print { display: none; } }
 </style></head><body>
@@ -184,6 +184,12 @@ ${plan.launch_plan_7_days.map(d => `<div class="day-card"><p><span class="day-nu
 <h2>Daily Actions (First 7 Days)</h2>
 ${plan.first_20_members.daily_actions_7_days.map(d => `<div class="day-card"><p><span class="day-num">${d.day}</span><strong>Day ${d.day}</strong></p><ul>${d.actions.map(a => `<li>${a}</li>`).join('')}</ul></div>`).join('')}
 
+<div class="cta-box">
+<h3>Ready to launch your Skool community?</h3>
+<p>You've got the plan. Now bring it to life with a free Skool trial.</p>
+<a href="${affiliateUrl}" class="cta-btn">Start Your Free Skool Trial</a>
+</div>
+
 <div class="footer">
 <p>${plan.disclaimers.educational_notice}</p>
 <p>Created with <a href="https://skoolprep.com">Skool Prep</a></p>
@@ -191,8 +197,8 @@ ${plan.first_20_members.daily_actions_7_days.map(d => `<div class="day-card"><p>
 </body></html>`;
 }
 
-function downloadPlanAsHtml(plan: GeneratedPlan) {
-  const html = generatePlanHtml(plan);
+function downloadPlanAsHtml(plan: GeneratedPlan, affiliateUrl: string) {
+  const html = generatePlanHtml(plan, affiliateUrl);
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -207,8 +213,6 @@ function downloadPlanAsHtml(plan: GeneratedPlan) {
 export default function Plan() {
   const [, navigate] = useLocation();
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
-  const [email, setEmail] = useState("");
-  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: config } = useQuery<AppConfig>({
@@ -228,27 +232,6 @@ export default function Plan() {
     }
   }, [navigate]);
 
-  const sendEmail = useMutation({
-    mutationFn: async (emailAddress: string) => {
-      const response = await apiRequest("POST", "/api/send-plan-email", {
-        email: emailAddress,
-        plan,
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ description: "Plan sent to your email!" });
-      setEmailDialogOpen(false);
-      setEmail("");
-    },
-    onError: (err: Error) => {
-      toast({
-        variant: "destructive",
-        description: err.message || "Failed to send email. Please try again.",
-      });
-    },
-  });
-
   if (!plan) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -264,7 +247,6 @@ export default function Plan() {
   }[plan.meta.recommended_path];
 
   const affiliateUrl = config?.affiliateUrl || "https://www.skool.com";
-  const emailEnabled = config?.emailEnabled ?? false;
 
   return (
     <div className="min-h-screen bg-background">
@@ -280,52 +262,10 @@ export default function Plan() {
             </Button>
           </div>
           <div className="flex items-center gap-3">
-            {emailEnabled && (
-              <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" data-testid="button-email-plan">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Email this plan
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Email your launch plan</DialogTitle>
-                    <DialogDescription>
-                      We'll send the full plan to your inbox so you can reference it anytime.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <Input
-                      type="email"
-                      placeholder="your@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      data-testid="input-email"
-                    />
-                    <Button
-                      className="w-full"
-                      disabled={!email || sendEmail.isPending}
-                      onClick={() => sendEmail.mutate(email)}
-                      data-testid="button-send-email"
-                    >
-                      {sendEmail.isPending ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
-                        </>
-                      ) : (
-                        "Send plan to my email"
-                      )}
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
             <Button
               variant="outline"
               onClick={() => {
-                downloadPlanAsHtml(plan);
+                downloadPlanAsHtml(plan, affiliateUrl);
                 toast({ description: "Plan downloaded! Open the file in your browser and print to save as PDF." });
               }}
               data-testid="button-download-plan"
