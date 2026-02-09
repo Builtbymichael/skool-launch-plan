@@ -4,15 +4,53 @@ import { storage } from "./storage";
 import { planFormSchema } from "@shared/schema";
 import { createHash } from "crypto";
 import OpenAI from "openai";
+import { Resend } from "resend";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const FROM_EMAIL = process.env.FROM_EMAIL || "notifications@builtbymichael.com";
+const NOTIFICATION_EMAIL = process.env.NOTIFICATION_EMAIL || "michael@builtbymichael.com";
+
 const HASH_SALT = process.env.HASH_SALT || "default-salt";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "";
 const SKOOL_AFFILIATE_URL = process.env.SKOOL_AFFILIATE_URL || "https://www.skool.com";
+
+async function sendPlanNotification(topic: string, audienceLevel: string, background: string) {
+  if (!resend) {
+    console.warn("Resend not configured — skipping notification email");
+    return;
+  }
+  try {
+    const now = new Date();
+    const timestamp = now.toLocaleString("en-GB", { timeZone: "Europe/London", dateStyle: "medium", timeStyle: "short" });
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: NOTIFICATION_EMAIL,
+      subject: `New Skool Plan: ${topic}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
+          <h2 style="color: #0B3D91;">New Plan Generated</h2>
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr><td style="padding: 8px 0; color: #666;">Topic</td><td style="padding: 8px 0; font-weight: 600;">${topic}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Audience</td><td style="padding: 8px 0;">${audienceLevel || "Not specified"}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Background</td><td style="padding: 8px 0;">${background || "Not specified"}</td></tr>
+            <tr><td style="padding: 8px 0; color: #666;">Time</td><td style="padding: 8px 0;">${timestamp}</td></tr>
+          </table>
+          <p style="margin-top: 16px; font-size: 13px; color: #999;">
+            <a href="https://skool-launch.replit.app/admin" style="color: #0B3D91;">View admin stats</a>
+          </p>
+        </div>
+      `,
+    });
+    console.log(`Notification email sent for topic: ${topic}`);
+  } catch (err) {
+    console.error("Failed to send notification email:", err);
+  }
+}
 
 const USER_DAILY_LIMIT = 3;
 const GLOBAL_DAILY_LIMIT = 100;
@@ -250,6 +288,8 @@ export async function registerRoutes(
           background: background || null,
         }),
       ]);
+
+      sendPlanNotification(topic, audienceLevel || "", background || "");
 
       res.json(plan);
     } catch (error: any) {
