@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { rateLimits, dailyUsage, topicSearches, emailSubscribers, type InsertTopicSearch, type InsertEmailSubscriber } from "@shared/schema";
+import { rateLimits, dailyUsage, topicSearches, type InsertTopicSearch } from "@shared/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
@@ -14,9 +14,6 @@ export interface IStorage {
   getTopTopics(limit?: number): Promise<Array<{ topic: string; count: number }>>;
   getTotalSearchCount(): Promise<number>;
 
-  // Email subscribers
-  addEmailSubscriber(data: InsertEmailSubscriber): Promise<void>;
-  getEmailSubscriberCount(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -100,16 +97,6 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)::int` })
       .from(topicSearches);
     
-    return result[0]?.count ?? 0;
-  }
-  async addEmailSubscriber(data: InsertEmailSubscriber): Promise<void> {
-    await db.insert(emailSubscribers).values(data);
-  }
-
-  async getEmailSubscriberCount(): Promise<number> {
-    const result = await db
-      .select({ count: sql<number>`count(*)::int` })
-      .from(emailSubscribers);
     return result[0]?.count ?? 0;
   }
 }

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Sparkles, Target, Users, Lightbulb, ChevronLeft, ChevronRight, BookOpen, DollarSign, MessageSquare, Rocket, CheckCircle2, Calendar } from "lucide-react";
+import { Loader2, Sparkles, Target, Users, ChevronLeft, ChevronRight, BookOpen, DollarSign, MessageSquare, Rocket, CheckCircle2, Calendar } from "lucide-react";
 import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 import { planFormSchema, type PlanFormInput, type GeneratedPlan } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -701,34 +701,15 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-4 mb-12">
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <Target className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-medium mb-1">Clear Positioning</h3>
-              <p className="text-sm text-muted-foreground">Know exactly who you're helping and how</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <Users className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-medium mb-1">First 20 Members</h3>
-              <p className="text-sm text-muted-foreground">Practical strategies to find your first audience</p>
-            </CardContent>
-          </Card>
-          <Card className="text-center">
-            <CardContent className="pt-6">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <Lightbulb className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-medium mb-1">7-Day Launch Plan</h3>
-              <p className="text-sm text-muted-foreground">Day-by-day actions to get started fast</p>
-            </CardContent>
-          </Card>
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold mb-2">See what you'll get</h2>
+            <p className="text-muted-foreground">
+              Here's a live preview of a plan we generated for a home carpentry niche
+            </p>
+          </div>
+
+          <ExampleCarousel />
         </div>
 
         <Card className="max-w-2xl mx-auto">
@@ -871,16 +852,6 @@ export default function Home() {
           </p>
         </div>
 
-        <div className="mt-20 mb-8">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold mb-2">See what you'll get</h2>
-            <p className="text-muted-foreground">
-              Here's a live preview of a plan we generated for a home carpentry niche
-            </p>
-          </div>
-
-          <ExampleCarousel />
-        </div>
       </main>
 
       <footer className="border-t border-border mt-16 py-8 text-center text-sm text-muted-foreground">

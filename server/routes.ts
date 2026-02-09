@@ -279,18 +279,16 @@ export async function registerRoutes(
 
     try {
       const dateKey = getDateKey();
-      const [todayGenerations, totalSearches, topTopics, emailSubscribers] = await Promise.all([
+      const [todayGenerations, totalSearches, topTopics] = await Promise.all([
         storage.getDailyGlobalCount(dateKey),
         storage.getTotalSearchCount(),
         storage.getTopTopics(20),
-        storage.getEmailSubscriberCount(),
       ]);
 
       res.json({
         todayGenerations,
         totalSearches,
         topTopics,
-        emailSubscribers,
       });
     } catch (error) {
       console.error("Error fetching admin stats:", error);

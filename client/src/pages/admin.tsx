@@ -5,14 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BarChart3, TrendingUp, Lock, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, BarChart3, TrendingUp, Lock, Loader2 } from "lucide-react";
 import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
 
 interface AdminStats {
   todayGenerations: number;
   totalSearches: number;
   topTopics: Array<{ topic: string; count: number }>;
-  emailSubscribers: number;
 }
 
 export default function Admin() {
@@ -136,7 +135,7 @@ export default function Admin() {
           </div>
         ) : (
           <>
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid md:grid-cols-2 gap-6 mb-8">
               <Card>
                 <CardHeader className="pb-2">
                   <CardDescription>Today's Generations</CardDescription>
@@ -164,21 +163,6 @@ export default function Admin() {
                 <CardContent>
                   <p className="text-sm text-muted-foreground">
                     All-time unique topics searched
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Email Subscribers</CardDescription>
-                  <CardTitle className="text-4xl flex items-center gap-2">
-                    <Mail className="h-8 w-8 text-primary" />
-                    <span data-testid="text-email-subscribers">{stats?.emailSubscribers || 0}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Users who emailed their plan
                   </p>
                 </CardContent>
               </Card>
