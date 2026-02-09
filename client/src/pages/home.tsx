@@ -699,6 +699,15 @@ export default function Home() {
             Get a practical, step-by-step blueprint to launch your Skool community or course 
             and find your first 20 members. No hype, just a solid starting point.
           </p>
+          <Button
+            size="lg"
+            className="mt-6"
+            data-testid="button-cta-create"
+            onClick={() => document.getElementById("create-plan-form")?.scrollIntoView({ behavior: "smooth" })}
+          >
+            <Rocket className="w-4 h-4 mr-2" />
+            Create Your Free Plan
+          </Button>
         </div>
 
         <div className="mb-12">
@@ -712,7 +721,7 @@ export default function Home() {
           <ExampleCarousel />
         </div>
 
-        <Card className="max-w-2xl mx-auto">
+        <Card id="create-plan-form" className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>Create Your Launch Plan</CardTitle>
             <CardDescription>
