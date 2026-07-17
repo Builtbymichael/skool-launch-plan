@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Sparkles, Copy, Check, ArrowLeft, ExternalLink, 
   Users, Target, DollarSign, Calendar, MessageSquare, 
-  Rocket, BookOpen, CheckCircle2, Loader2, Download 
+  Rocket, BookOpen, CheckCircle2, Loader2, Download, Mail 
 } from "lucide-react";
 import { type GeneratedPlan } from "@shared/schema";
 import logoImg from "@assets/Skool_Prep_Logo_(1)_1770489917211.png";
@@ -54,6 +54,86 @@ function CopyableSection({ title, content, multiline = false }: { title: string;
         <CopyButton text={content} label={title} />
       </div>
     </div>
+  );
+}
+
+function EmailCapture({ planId }: { planId: string | null }) {
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<"idle" | "sending" | "done" | "error">(
+    typeof window !== "undefined" && localStorage.getItem("lp_subscribed") ? "done" : "idle"
+  );
+  const [errorMsg, setErrorMsg] = useState("");
+
+  if (!planId) return null;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || status === "sending") return;
+    setStatus("sending");
+    setErrorMsg("");
+    try {
+      const res = await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, planId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Something went wrong");
+      localStorage.setItem("lp_subscribed", "1");
+      setStatus("done");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Something went wrong — please try again");
+      setStatus("error");
+    }
+  };
+
+  return (
+    <Card className="mb-8 border-dashed">
+      <CardContent className="pt-6">
+        {status === "done" ? (
+          <div className="flex items-center gap-3" data-testid="text-subscribe-success">
+            <CheckCircle2 className="h-6 w-6 text-green-500 shrink-0" />
+            <div>
+              <h3 className="font-semibold">Check your inbox</h3>
+              <p className="text-sm text-muted-foreground">
+                Your plan is on its way, with a permanent link so you never lose it. The 3-part launch series follows over the next week.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Mail className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Don't lose this plan</h3>
+            </div>
+            <p className="text-muted-foreground text-sm mb-4">
+              Email me my plan + 3 short emails to help you launch it. No spam, unsubscribe anytime.
+            </p>
+            <form onSubmit={submit} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="flex h-10 w-full sm:max-w-xs rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                data-testid="input-subscribe-email"
+              />
+              <Button type="submit" disabled={status === "sending"} data-testid="button-subscribe">
+                {status === "sending" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>Email me my plan</>
+                )}
+              </Button>
+            </form>
+            {status === "error" && (
+              <p className="text-sm text-destructive mt-2" data-testid="text-subscribe-error">{errorMsg}</p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -212,7 +292,10 @@ function downloadPlanAsHtml(plan: GeneratedPlan, affiliateUrl: string) {
 
 export default function Plan() {
   const [, navigate] = useLocation();
+  const [, params] = useRoute("/plan/:id");
+  const sharedPlanId = params?.id ?? null;
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
+  const [planId, setPlanId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: config } = useQuery<AppConfig>({
@@ -220,17 +303,33 @@ export default function Plan() {
   });
 
   useEffect(() => {
+    if (sharedPlanId) {
+      // Shared/emailed permalink: load the saved plan from the server
+      fetch(`/api/plan/${sharedPlanId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("not found");
+          return res.json();
+        })
+        .then((data) => {
+          setPlan(data.plan);
+          setPlanId(data.id);
+        })
+        .catch(() => navigate("/"));
+      return;
+    }
     const storedPlan = sessionStorage.getItem("generatedPlan");
     if (storedPlan) {
       try {
-        setPlan(JSON.parse(storedPlan));
+        const parsed = JSON.parse(storedPlan);
+        setPlan(parsed);
+        setPlanId(typeof parsed.planId === "string" ? parsed.planId : null);
       } catch {
         navigate("/");
       }
     } else {
       navigate("/");
     }
-  }, [navigate]);
+  }, [navigate, sharedPlanId]);
 
   if (!plan) {
     return (
@@ -318,6 +417,8 @@ export default function Plan() {
             </div>
           </CardContent>
         </Card>
+
+        <EmailCapture planId={planId} />
 
         <Tabs defaultValue="positioning" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto gap-1 p-1">
