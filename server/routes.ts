@@ -1,7 +1,8 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { planFormSchema } from "@shared/schema";
+import { planFormSchema, subscribeSchema } from "@shared/schema";
+import { sendPlanEmail, startDripScheduler } from "./email-flow";
 import { createHash } from "crypto";
 import OpenAI from "openai";
 import { Resend } from "resend";
@@ -41,7 +42,7 @@ async function sendPlanNotification(topic: string, audienceLevel: string, backgr
             <tr><td style="padding: 8px 0; color: #666;">Time</td><td style="padding: 8px 0;">${timestamp}</td></tr>
           </table>
           <p style="margin-top: 16px; font-size: 13px; color: #999;">
-            <a href="https://skool-launch.replit.app/admin" style="color: #0B3D91;">View admin stats</a>
+            <a href="https://launchplan.skoolprep.com/admin-lite" style="color: #0B3D91;">View admin stats</a>
           </p>
         </div>
       `,
@@ -278,6 +279,14 @@ export async function registerRoutes(
         throw new Error("Failed to parse AI response");
       }
 
+      // Persist the plan so it has a shareable URL and can be emailed
+      let planId: string | null = null;
+      try {
+        planId = await storage.savePlan(topic, JSON.stringify(plan));
+      } catch (err) {
+        console.error("Failed to save plan (continuing without permalink):", err);
+      }
+
       // Increment counters after successful generation
       await Promise.all([
         storage.incrementUserGenerationCount(userHash, dateKey),
@@ -291,7 +300,7 @@ export async function registerRoutes(
 
       sendPlanNotification(topic, audienceLevel || "", background || "");
 
-      res.json(plan);
+      res.json({ ...plan, planId });
     } catch (error: any) {
       console.error("Error generating plan:", error);
       res.status(500).json({
@@ -299,6 +308,70 @@ export async function registerRoutes(
         message: error.message || "Something went wrong. Please try again.",
       });
     }
+  });
+
+  // Fetch a saved plan (shareable permalink)
+  app.get("/api/plan/:id", async (req: Request, res: Response) => {
+    try {
+      const saved = await storage.getPlan(req.params.id);
+      if (!saved) {
+        return res.status(404).json({ error: "Plan not found" });
+      }
+      res.json({ id: saved.id, topic: saved.topic, plan: JSON.parse(saved.planJson) });
+    } catch (error) {
+      console.error("Error fetching plan:", error);
+      res.status(500).json({ error: "Failed to fetch plan" });
+    }
+  });
+
+  // Subscribe: save email, send them their plan + start the nurture sequence
+  app.post("/api/subscribe", async (req: Request, res: Response) => {
+    try {
+      const validation = subscribeSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: "Please enter a valid email address" });
+      }
+      const { email, planId } = validation.data;
+
+      const saved = await storage.getPlan(planId);
+      if (!saved) {
+        return res.status(404).json({ error: "Plan not found — try generating a new plan" });
+      }
+
+      const sub = await storage.upsertSubscriber(email, saved.topic, planId);
+
+      // Send Email 0 (their plan) immediately if they haven't had it yet
+      if (sub.stage === 0) {
+        const sent = await sendPlanEmail(sub, saved.planJson);
+        if (sent) {
+          await storage.advanceSubscriberStage(sub.id, 1);
+        } else {
+          return res.status(500).json({ error: "Could not send the email — please try again" });
+        }
+      } else {
+        // Existing subscriber with a new plan — send them the new plan email too, without resetting their drip
+        await sendPlanEmail(sub, saved.planJson);
+      }
+
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("Error subscribing:", error);
+      res.status(500).json({ error: "Something went wrong — please try again" });
+    }
+  });
+
+  // One-click unsubscribe
+  app.get("/api/unsubscribe", async (req: Request, res: Response) => {
+    const token = String(req.query.token || "");
+    const ok = token ? await storage.unsubscribeByToken(token) : false;
+    res
+      .status(ok ? 200 : 400)
+      .set("Content-Type", "text/html")
+      .send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Skool Prep</title></head><body style="font-family:sans-serif;max-width:480px;margin:80px auto;text-align:center;color:#1a1a1a">
+<h2 style="color:#0B3D91">${ok ? "You're unsubscribed" : "Link not recognised"}</h2>
+<p>${ok ? "You won't receive any more emails from the Skool Launch Plan series." : "This unsubscribe link looks invalid or was already used."}</p>
+<p><a href="https://launchplan.skoolprep.com" style="color:#0B3D91">Back to Skool Launch Plan</a></p>
+</body></html>`);
   });
 
   // Admin endpoints
@@ -319,16 +392,18 @@ export async function registerRoutes(
 
     try {
       const dateKey = getDateKey();
-      const [todayGenerations, totalSearches, topTopics] = await Promise.all([
+      const [todayGenerations, totalSearches, topTopics, subscriberCount] = await Promise.all([
         storage.getDailyGlobalCount(dateKey),
         storage.getTotalSearchCount(),
         storage.getTopTopics(20),
+        storage.getSubscriberCount(),
       ]);
 
       res.json({
         todayGenerations,
         totalSearches,
         topTopics,
+        subscriberCount,
       });
     } catch (error) {
       console.error("Error fetching admin stats:", error);
@@ -336,6 +411,8 @@ export async function registerRoutes(
     }
   });
 
+  // Start the nurture drip scheduler (runs every 6 hours)
+  startDripScheduler();
+
   return httpServer;
 }
-
