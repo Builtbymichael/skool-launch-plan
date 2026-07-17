@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { rateLimits, dailyUsage, topicSearches, type InsertTopicSearch } from "@shared/schema";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { rateLimits, dailyUsage, topicSearches, plans, emailSubscribers, type InsertTopicSearch, type EmailSubscriber, type SavedPlan } from "@shared/schema";
+import { eq, and, desc, isNull, gte, lte, sql } from "drizzle-orm";
 
 export interface IStorage {
   // Rate limiting
@@ -8,12 +8,22 @@ export interface IStorage {
   incrementUserGenerationCount(userHash: string, dateKey: string): Promise<void>;
   getDailyGlobalCount(dateKey: string): Promise<number>;
   incrementDailyGlobalCount(dateKey: string): Promise<void>;
-  
+
   // Topic analytics
   recordTopicSearch(data: InsertTopicSearch): Promise<void>;
   getTopTopics(limit?: number): Promise<Array<{ topic: string; count: number }>>;
   getTotalSearchCount(): Promise<number>;
 
+  // Plans
+  savePlan(topic: string, planJson: string): Promise<string>;
+  getPlan(id: string): Promise<SavedPlan | undefined>;
+
+  // Subscribers
+  upsertSubscriber(email: string, topic: string | null, planId: string): Promise<EmailSubscriber>;
+  advanceSubscriberStage(id: string, stage: number): Promise<void>;
+  getActiveDripSubscribers(): Promise<EmailSubscriber[]>;
+  unsubscribeByToken(token: string): Promise<boolean>;
+  getSubscriberCount(): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -22,7 +32,7 @@ export class DatabaseStorage implements IStorage {
       .select({ generationCount: rateLimits.generationCount })
       .from(rateLimits)
       .where(and(eq(rateLimits.userHash, userHash), eq(rateLimits.dateKey, dateKey)));
-    
+
     return result[0]?.generationCount ?? 0;
   }
 
@@ -31,7 +41,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(rateLimits)
       .where(and(eq(rateLimits.userHash, userHash), eq(rateLimits.dateKey, dateKey)));
-    
+
     if (existing.length > 0) {
       await db
         .update(rateLimits)
@@ -51,7 +61,7 @@ export class DatabaseStorage implements IStorage {
       .select({ totalGenerations: dailyUsage.totalGenerations })
       .from(dailyUsage)
       .where(eq(dailyUsage.dateKey, dateKey));
-    
+
     return result[0]?.totalGenerations ?? 0;
   }
 
@@ -60,7 +70,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(dailyUsage)
       .where(eq(dailyUsage.dateKey, dateKey));
-    
+
     if (existing.length > 0) {
       await db
         .update(dailyUsage)
@@ -88,7 +98,7 @@ export class DatabaseStorage implements IStorage {
       .groupBy(topicSearches.topic)
       .orderBy(desc(sql`count(*)`))
       .limit(limit);
-    
+
     return result;
   }
 
@@ -96,7 +106,67 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(topicSearches);
-    
+
+    return result[0]?.count ?? 0;
+  }
+
+  // ----- Plans -----
+
+  async savePlan(topic: string, planJson: string): Promise<string> {
+    const result = await db.insert(plans).values({ topic, planJson }).returning({ id: plans.id });
+    return result[0].id;
+  }
+
+  async getPlan(id: string): Promise<SavedPlan | undefined> {
+    const result = await db.select().from(plans).where(eq(plans.id, id));
+    return result[0];
+  }
+
+  // ----- Subscribers -----
+
+  async upsertSubscriber(email: string, topic: string | null, planId: string): Promise<EmailSubscriber> {
+    const normalized = email.trim().toLowerCase();
+    const existing = await db.select().from(emailSubscribers).where(eq(emailSubscribers.email, normalized));
+    if (existing.length > 0) {
+      // Re-point their latest plan; don't reset their drip stage or resubscribe them
+      await db
+        .update(emailSubscribers)
+        .set({ planId, topic })
+        .where(eq(emailSubscribers.id, existing[0].id));
+      return { ...existing[0], planId, topic };
+    }
+    const result = await db
+      .insert(emailSubscribers)
+      .values({ email: normalized, topic, planId, stage: 0 })
+      .returning();
+    return result[0];
+  }
+
+  async advanceSubscriberStage(id: string, stage: number): Promise<void> {
+    await db
+      .update(emailSubscribers)
+      .set({ stage, lastEmailAt: sql`CURRENT_TIMESTAMP` })
+      .where(eq(emailSubscribers.id, id));
+  }
+
+  async getActiveDripSubscribers(): Promise<EmailSubscriber[]> {
+    return db
+      .select()
+      .from(emailSubscribers)
+      .where(and(isNull(emailSubscribers.unsubscribedAt), gte(emailSubscribers.stage, 1), lte(emailSubscribers.stage, 3)));
+  }
+
+  async unsubscribeByToken(token: string): Promise<boolean> {
+    const result = await db
+      .update(emailSubscribers)
+      .set({ unsubscribedAt: sql`CURRENT_TIMESTAMP` })
+      .where(eq(emailSubscribers.unsubscribeToken, token))
+      .returning({ id: emailSubscribers.id });
+    return result.length > 0;
+  }
+
+  async getSubscriberCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)::int` }).from(emailSubscribers);
     return result[0]?.count ?? 0;
   }
 }

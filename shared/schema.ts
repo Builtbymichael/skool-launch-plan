@@ -26,11 +26,25 @@ export const topicSearches = pgTable("topic_searches", {
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
-// Email subscribers - stores emails for future marketing
+// Saved generated plans - enables shareable /plan/:id links and email delivery
+export const plans = pgTable("plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  topic: text("topic").notNull(),
+  planJson: text("plan_json").notNull(),
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// Email subscribers - stores emails for the launch nurture sequence
 export const emailSubscribers = pgTable("email_subscribers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull(),
   topic: text("topic"),
+  planId: varchar("plan_id"),
+  // stage: 0 = just created, 1 = plan email sent, 2/3/4 = drip emails 1/2/3 sent
+  stage: integer("stage").notNull().default(0),
+  lastEmailAt: timestamp("last_email_at"),
+  unsubscribeToken: varchar("unsubscribe_token").notNull().default(sql`gen_random_uuid()`),
+  unsubscribedAt: timestamp("unsubscribed_at"),
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
@@ -60,6 +74,13 @@ export type TopicSearch = typeof topicSearches.$inferSelect;
 export type InsertTopicSearch = z.infer<typeof insertTopicSearchSchema>;
 export type EmailSubscriber = typeof emailSubscribers.$inferSelect;
 export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
+export type SavedPlan = typeof plans.$inferSelect;
+
+// Subscribe input schema
+export const subscribeSchema = z.object({
+  email: z.string().email("Please enter a valid email"),
+  planId: z.string().min(1),
+});
 
 // Form input schema for validation
 export const planFormSchema = z.object({
