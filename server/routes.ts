@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { planFormSchema, subscribeSchema } from "@shared/schema";
-import { sendPlanEmail, startDripScheduler } from "./email-flow";
+import { sendPlanEmail, startDripScheduler, runDrip } from "./email-flow";
 import { createHash } from "crypto";
 import OpenAI from "openai";
 import { Resend } from "resend";
@@ -374,6 +374,19 @@ export async function registerRoutes(
 </body></html>`);
   });
 
+  // Drip trigger — safe to call any time (idempotent: only sends emails that are due).
+  // Exists because Autoscale deployments sleep between requests, so the in-process
+  // 6-hour timer can't be relied on. An external ping hits this daily.
+  app.get("/api/run-drip", async (req: Request, res: Response) => {
+    try {
+      await runDrip();
+      res.json({ ok: true });
+    } catch (error) {
+      console.error("run-drip failed:", error);
+      res.status(500).json({ ok: false });
+    }
+  });
+
   // Admin endpoints
   app.post("/api/admin/verify", (req: Request, res: Response) => {
     const { password } = req.body;
@@ -411,7 +424,7 @@ export async function registerRoutes(
     }
   });
 
-  // Start the nurture drip scheduler (runs every 6 hours)
+  // Start the nurture drip scheduler (runs every 6 hours while the process is alive)
   startDripScheduler();
 
   return httpServer;
