@@ -53,6 +53,26 @@ async function sendPlanNotification(topic: string, audienceLevel: string, backgr
   }
 }
 
+async function sendSubscriberNotification(email: string, topic: string | null) {
+  if (!resend) return;
+  try {
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: NOTIFICATION_EMAIL,
+      subject: `New email subscriber: ${email}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto;">
+          <h2 style="color: #0B3D91;">New Launch Plan Subscriber</h2>
+          <p><strong>${email}</strong> joined the nurture list${topic ? ` after building a plan for: <em>${topic}</em>` : ""}.</p>
+          <p style="font-size: 13px; color: #999;">They've been sent their plan (Email 0) and will get the 3-part launch series over the next week.</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("Failed to send subscriber notification:", err);
+  }
+}
+
 const USER_DAILY_LIMIT = 3;
 const GLOBAL_DAILY_LIMIT = 100;
 
@@ -345,6 +365,7 @@ export async function registerRoutes(
         const sent = await sendPlanEmail(sub, saved.planJson);
         if (sent) {
           await storage.advanceSubscriberStage(sub.id, 1);
+          sendSubscriberNotification(sub.email, saved.topic);
         } else {
           return res.status(500).json({ error: "Could not send the email — please try again" });
         }
